@@ -23,7 +23,7 @@ class MainActivity : AppCompatActivity(){
         //所以suspend应该修饰会发生调度的函数
 
         //launch/async可以实现并发（官方叫做“结构化并发”）
-        // 区别是launch无返回值，async返回一个Derfer可以调用await()获取其返回值
+        //区别是launch无返回值，async返回一个Derfer可以调用await()获取其返回值
 
         //在父协程或者子协程中发生异常会取消所有协程（主协程会被中断，所有子协程也会被取消），这叫做异常的传播
 
