@@ -54,5 +54,13 @@ class MainActivity : AppCompatActivity(){
         startActivity(Intent(this,SupervisorscopeActivity::class.java))
     }
 
+    fun FlowActivity(view: View) {
+        startActivity(Intent(this,FlowActivity::class.java))
+    }
+
+    fun ChannelActivity(view: View) {
+        startActivity(Intent(this,ChannelActivity::class.java))
+    }
+
 
 }

@@ -9,7 +9,9 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.CoroutineDemo">
-        <activity android:name=".WithcontextActivity"></activity>
+        <activity android:name=".FlowActivity"></activity>
+        <activity android:name=".ChannelActivity" />
+        <activity android:name=".WithcontextActivity" />
         <activity android:name=".SupervisorscopeActivity" />
         <activity android:name=".SupervisorJobActivity" />
         <activity android:name=".CoroutineExceptionInChildActivity" />
