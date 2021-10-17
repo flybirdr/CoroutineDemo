@@ -2,12 +2,15 @@ package me.rookie.coroutine
 
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.*
+import kotlin.coroutines.resume
 
 class FlowActivity : AppCompatActivity(), CoroutineScope by MainScope() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -61,4 +64,90 @@ class FlowActivity : AppCompatActivity(), CoroutineScope by MainScope() {
 
         }
     }
+
+    val mutableStateFlow = MutableStateFlow<Int>(0)
+    val mutableSharedFlow = MutableSharedFlow<Int>()
+
+    //热流
+    fun hotFlow() {
+        launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                mutableStateFlow.collect {
+                    Toast.makeText(this@FlowActivity, "StateFlow: $it", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    suspend fun LifecycleOwner.repeatOnLifecycle(
+        state: Lifecycle.State,
+        block: suspend () -> Unit
+    ) {
+        lifecycle.repeatOnLifecycle(state, block)
+    }
+
+    suspend fun Lifecycle.repeatOnLifecycle(
+        state: Lifecycle.State,
+        block: suspend () -> Unit
+    ) {
+        require(state !== Lifecycle.State.INITIALIZED) {
+            "repeatOnLifecycle cannot start work with the INITIALIZED lifecycle state."
+        }
+
+        if (currentState === androidx.lifecycle.Lifecycle.State.DESTROYED) {
+            return
+        }
+        coroutineScope {
+            withContext(Dispatchers.Main.immediate) {
+                var job: Job? = null
+                var observer: LifecycleObserver? = null
+                suspendCancellableCoroutine<Unit> { ccont ->
+                    val resumeEvent = state.toEvent()
+                    val suspendEvent = state.downEvent()
+                    observer = object : LifecycleEventObserver {
+                        override fun onStateChanged(
+                            source: LifecycleOwner,
+                            event: Lifecycle.Event
+                        ) {
+                            if (event == resumeEvent) {
+                                job = launch { block() }
+                            } else if (event == suspendEvent) {
+                                job?.cancel()
+                            } else if (event == Lifecycle.Event.ON_DESTROY) {
+                                ccont.resume(Unit)
+                            }
+                        }
+                    }
+                    addObserver(observer!!)
+                }
+                observer?.let {
+                    removeObserver(it)
+                }
+                job?.cancel()
+            }
+        }
+    }
+}
+
+private fun Lifecycle.State.downEvent() = when (this) {
+    Lifecycle.State.CREATED ->
+        Lifecycle.Event.ON_DESTROY
+    Lifecycle.State.STARTED ->
+        Lifecycle.Event.ON_STOP
+    Lifecycle.State.RESUMED ->
+        Lifecycle.Event.ON_PAUSE
+    else -> throw IllegalArgumentException("illegale state")
+}
+
+
+private fun Lifecycle.State.toEvent() = when (this) {
+    Lifecycle.State.CREATED ->
+        Lifecycle.Event.ON_CREATE
+    Lifecycle.State.STARTED ->
+        Lifecycle.Event.ON_START
+    Lifecycle.State.RESUMED ->
+        Lifecycle.Event.ON_RESUME
+    Lifecycle.State.DESTROYED ->
+        Lifecycle.Event.ON_DESTROY
+    else -> throw IllegalArgumentException("illegale state")
 }

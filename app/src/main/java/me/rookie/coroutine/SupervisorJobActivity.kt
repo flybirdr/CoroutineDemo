@@ -5,7 +5,7 @@ import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.coroutines.*
 
-class SupervisorJobActivity : AppCompatActivity(), CoroutineScope by MainScope() {
+class SupervisorJobActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dispatchers.Main) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_supervisor_job)
@@ -29,8 +29,8 @@ class SupervisorJobActivity : AppCompatActivity(), CoroutineScope by MainScope()
             )
             throwable.printStackTrace()
         }
-        launch {
-
+        launch() {
+            Log.d("Job","${coroutineContext}")
             //设置了SupervisorJob()+CoroutineExceptionHandler的子协程自己处理异常，不会影响其他子协程
             launch(SupervisorJob() + handler) {
                 throw RuntimeException("excetion in child coroutine")
@@ -38,6 +38,9 @@ class SupervisorJobActivity : AppCompatActivity(), CoroutineScope by MainScope()
             }
 
             async {
+                Log.e("SupervisorScope", "async on ${Thread.currentThread().name}")
+            }
+            async(Dispatchers.IO) {
                 Log.e("SupervisorScope", "async on ${Thread.currentThread().name}")
             }
 
