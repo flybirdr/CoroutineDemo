@@ -2,7 +2,6 @@ package me.rookie.coroutine
 
 import android.os.Bundle
 import android.util.Log
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -13,10 +12,22 @@ import kotlinx.coroutines.flow.*
 import kotlin.coroutines.resume
 
 class FlowActivity : AppCompatActivity(), CoroutineScope by MainScope() {
+
+    val mutableStateFlow = MutableStateFlow<Int>(0)
+    val mutableSharedFlow = MutableSharedFlow<Int>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_flow)
-        produceAndConsume()
+        //produceAndConsume()
+        hotFlow()
+        launch {
+            repeat(1000) {
+                delay(1000)
+                mutableSharedFlow.emit(it + 1)
+                mutableStateFlow.emit(it - 1)
+            }
+        }
     }
 
     override fun onDestroy() {
@@ -65,15 +76,29 @@ class FlowActivity : AppCompatActivity(), CoroutineScope by MainScope() {
         }
     }
 
-    val mutableStateFlow = MutableStateFlow<Int>(0)
-    val mutableSharedFlow = MutableSharedFlow<Int>()
-
     //热流
     fun hotFlow() {
+        mutableStateFlow.observe(this) {
+            Log.d("StateFlow", "$it")
+        }
+        mutableSharedFlow.observe {
+            Log.d("SharedFlow", "$it")
+        }
+    }
+
+    fun <T> SharedFlow<T>.observe(block: (T) -> Unit) {
         launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                mutableStateFlow.collect {
-                    Toast.makeText(this@FlowActivity, "StateFlow: $it", Toast.LENGTH_SHORT).show()
+            collect {
+                block(it)
+            }
+        }
+    }
+
+    fun <T> StateFlow<T>.observe(owner: LifecycleOwner, block: (T) -> Unit) {
+        launch {
+            owner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                collect {
+                    block(it)
                 }
             }
         }
