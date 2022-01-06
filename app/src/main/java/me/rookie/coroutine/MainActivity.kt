@@ -62,5 +62,7 @@ class MainActivity : AppCompatActivity(){
         startActivity(Intent(this,ChannelActivity::class.java))
     }
 
-
+    fun CancelActivity(view: View) {
+        startActivity(Intent(this,CancelActivity::class.java))
+    }
 }
